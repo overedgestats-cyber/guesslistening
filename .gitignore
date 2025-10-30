@@ -1,9 +1,6 @@
-﻿# General
-.DS_Store
+﻿.DS_Store
 Thumbs.db
-# Node/JS (if you ever add tooling)
 node_modules/
 npm-debug.log*
 yarn-error.log*
-# Vercel
 .vercel/
