@@ -44,6 +44,9 @@
           <span>Decade:</span>
           <select id="decade">
             <option value="">Any</option>
+            <option value="1940">40s</option>
+            <option value="1950">50s</option>
+            <option value="1960">60s</option>
             <option value="1970">70s</option>
             <option value="1980">80s</option>
             <option value="1990">90s</option>
@@ -69,13 +72,17 @@
       </div>
 
       <div class="meta">
-        <h2 id="title">Tap “Surprise me”</h2>
-        <p id="artist">…and we’ll pick something</p>
+        <!-- Wrapped so we can blur this whole block in Guess mode -->
+        <div id="titleWrap" class="titleWrap">
+          <h2 id="title">Tap “Surprise me”</h2>
+          <p id="artist">…and we’ll pick something</p>
+        </div>
 
         <audio id="audio" preload="none"></audio>
 
         <div class="actions">
-          <button id="btnPlay" class="btn">▶️ Play preview</button>
+          <button id="btnPlay" class="btn">▶️ Play</button>
+          <button id="btnPause" class="btn">⏸️ Pause</button>
           <button id="btnCopy" class="btn">📋 Copy text</button>
           <button id="btnShare" class="btn">🔗 Share</button>
           <button id="btnDownload" class="btn">🖼️ Download card</button>
