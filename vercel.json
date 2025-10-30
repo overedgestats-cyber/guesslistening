@@ -1,8 +1,8 @@
-{
+﻿{
   "version": 2,
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/",               "destination": "/public/guess-listening/index.html" },
-    { "source": "/guess-listening","destination": "/public/guess-listening/index.html" }
+    { "source": "/",               "destination": "/guess-listening/index.html" },
+    { "source": "/guess-listening","destination": "/guess-listening/index.html" }
   ]
 }
