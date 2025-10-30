@@ -110,3 +110,15 @@ body.only-covers .guess { display: none !important; }
 
 /* Slight polish for the cover when it's the star */
 body.only-covers .coverWrap { box-shadow: 0 10px 30px rgba(0,0,0,.45); }
+/* Blur the title/artist while guessing (revealed on correct answer) */
+.titleWrap.blur {
+  filter: blur(7px);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Make disabled buttons look clearly disabled */
+.btn[disabled] { opacity: .55; cursor: not-allowed }
+
+/* Slightly unify button width for play/pause row */
+.actions .btn { min-width: 120px; text-align: center }

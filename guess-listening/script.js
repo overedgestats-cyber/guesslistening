@@ -1,27 +1,36 @@
-/* Tiny “Guess what I’m listening” app — v2 upgrades:
-   + Story export (1080x1920)
-   + Only-covers mode (no text)
-   + Decade roulette (weighted seeds + post-filtering)
-   + Crowd cheer SFX on correct guess
+/* Guess what I'm listening — v2.1
+   - Story export (1080x1920)
+   - Only-covers mode
+   - Decade roulette (now includes 40s/50s/60s)
+   - Crowd cheer SFX on correct guess
+   - Guess-mode blur of title/artist until correct
+   - Separate Play / Pause buttons
 */
+
 const els = {
   title: document.getElementById('title'),
   artist: document.getElementById('artist'),
+  titleWrap: document.getElementById('titleWrap'),
   cover: document.getElementById('cover'),
   eq: document.getElementById('eq'),
   audio: document.getElementById('audio'),
+
   btnRandom: document.getElementById('btnRandom'),
   btnNext: document.getElementById('btnNext'),
   btnPlay: document.getElementById('btnPlay'),
+  btnPause: document.getElementById('btnPause'),
   btnCopy: document.getElementById('btnCopy'),
   btnShare: document.getElementById('btnShare'),
   btnDownload: document.getElementById('btnDownload'),
   btnDownloadStory: document.getElementById('btnDownloadStory'),
+
   toggleGuess: document.getElementById('toggleGuess'),
   toggleOnlyCovers: document.getElementById('toggleOnlyCovers'),
+
   guessBox: document.getElementById('guessBox'),
   choices: document.getElementById('choices'),
   result: document.getElementById('result'),
+
   vibe: document.getElementById('vibe'),
   decade: document.getElementById('decade'),
   canvas: document.getElementById('canvas')
@@ -40,7 +49,10 @@ function ensureAudioCtx(){
 
 /* ---------- Decade roulette helpers ---------- */
 const decadeSeeds = {
-  "1970": ["disco","funk","classic rock","soul","psychedelic"],
+  "1940": ["big band","swing","vocal jazz","boogie-woogie","crooner"],
+  "1950": ["rock and roll","doo-wop","skiffle","blues","country"],
+  "1960": ["psychedelic rock","motown","british invasion","folk rock","soul"],
+  "1970": ["disco","funk","classic rock","soul","soft rock"],
   "1980": ["synthpop","new wave","hair metal","post-punk","boogie"],
   "1990": ["alt rock","britpop","grunge","eurodance","boom bap"],
   "2000": ["indie rock","rnb","pop punk","electro house","trance"],
@@ -56,8 +68,7 @@ function randomSeed(){
 function weightedSeed(decadeValue){
   if (!decadeValue) return randomSeed();
   const seeds = decadeSeeds[decadeValue];
-  // 70% from decade palette, 30% generic
-  return Math.random() < 0.7 ? randItem(seeds) : randomSeed();
+  return Math.random() < 0.7 ? randItem(seeds) : randomSeed(); // 70% decade vibe, 30% generic
 }
 
 /* ---------- Fetching tracks (with decade post-filter) ---------- */
@@ -71,7 +82,6 @@ async function fetchRandomTrack(vibe='', decadeValue=''){
   let pool = (data?.results || [])
     .filter(x => x.trackName && x.artistName && (x.artworkUrl100 || x.artworkUrl60));
 
-  // Post-filter by decade if set (keep some slack; if < 6 remain, relax)
   if (decadeValue) {
     const start = parseInt(decadeValue, 10);
     const end = start + 9;
@@ -79,7 +89,7 @@ async function fetchRandomTrack(vibe='', decadeValue=''){
       const y = +(x.releaseDate?.slice(0,4) || 0);
       return y >= start && y <= end;
     });
-    if (filtered.length >= 6) pool = filtered; // enough variety
+    if (filtered.length >= 6) pool = filtered; // keep variety
   }
 
   if (!pool.length) throw new Error('No tracks found.');
@@ -102,8 +112,29 @@ function updateUIFromTrack(t){
   els.artist.textContent = current.artist;
   els.cover.src = current.artwork || '';
   els.audio.src = current.preview || '';
-  els.btnPlay.disabled = !current.preview;
   els.eq.style.visibility = current.preview ? 'visible' : 'hidden';
+
+  // If there is no preview, make play/pause inert
+  const hasPreview = !!current.preview;
+  els.btnPlay.disabled = !hasPreview;
+  els.btnPause.disabled = !hasPreview;
+}
+
+/* Hide or reveal title/artist and enable/disable share actions */
+function setGuessUIHidden(isHidden){
+  if (isHidden) {
+    els.titleWrap.classList.add('blur');
+    els.btnCopy.disabled = true;
+    els.btnShare.disabled = true;
+    els.btnDownload.disabled = true;
+    els.btnDownloadStory.disabled = true;
+  } else {
+    els.titleWrap.classList.remove('blur');
+    els.btnCopy.disabled = false;
+    els.btnShare.disabled = false;
+    els.btnDownload.disabled = false;
+    els.btnDownloadStory.disabled = false;
+  }
 }
 
 async function surprise(){
@@ -112,6 +143,10 @@ async function surprise(){
   try{
     const t = await fetchRandomTrack(els.vibe.value.trim(), els.decade.value);
     updateUIFromTrack(t);
+
+    // Hide the title/artist while guessing; show otherwise
+    setGuessUIHidden(els.toggleGuess.checked);
+
     if (els.toggleGuess.checked) {
       await setupGuessRound(t);
     } else {
@@ -131,6 +166,7 @@ function fallbackUI(msg){
   els.cover.src = '';
   els.audio.removeAttribute('src');
   els.btnPlay.disabled = true;
+  els.btnPause.disabled = true;
 }
 
 function setLoading(is){
@@ -138,21 +174,18 @@ function setLoading(is){
   els.btnRandom.textContent = is ? 'Loading…' : '🎲 Surprise me';
 }
 
-/* ---------- Play/Pause preview ---------- */
-function togglePlay(){
+/* ---------- Preview controls ---------- */
+function playPreview(){
   if (!els.audio.src) return;
-  if (els.audio.paused) {
-    els.audio.play();
-    els.btnPlay.textContent = '⏸️ Pause';
-    els.eq.classList.add('playing');
-  } else {
-    els.audio.pause();
-    els.btnPlay.textContent = '▶️ Play preview';
-    els.eq.classList.remove('playing');
-  }
+  els.audio.play().catch(()=>{});
+  els.eq.classList.add('playing');
+}
+function pausePreview(){
+  if (!els.audio.src) return;
+  els.audio.pause();
+  els.eq.classList.remove('playing');
 }
 els.audio.addEventListener('ended', ()=> {
-  els.btnPlay.textContent = '▶️ Play preview';
   els.eq.classList.remove('playing');
 });
 
@@ -181,7 +214,10 @@ async function setupGuessRound(answer){
       els.result.textContent = correct ? '✅ Nice ears!' : `❌ Nope — it was “${answer.trackName}” by ${answer.artistName}.`;
       document.getElementById('card').style.animation = 'pulse .6s ease';
       setTimeout(()=>document.getElementById('card').style.animation='', 650);
-      if (correct) playCheer();
+      if (correct) {
+        setGuessUIHidden(false); // reveal and re-enable actions
+        playCheer();
+      }
     });
     els.choices.appendChild(btn);
   });
@@ -195,7 +231,7 @@ function playCheer(){
     const dur = 1.2;
     const now = audioCtx.currentTime;
 
-    // Crowd noise: band-limited noise via multiple detuned oscillators
+    // Crowd-ish noise: two oscillators + envelope
     const oscA = audioCtx.createOscillator();
     const oscB = audioCtx.createOscillator();
     const g = audioCtx.createGain();
@@ -210,7 +246,7 @@ function playCheer(){
     oscA.start(now); oscB.start(now);
     oscA.stop(now + dur); oscB.stop(now + dur);
 
-    // Handclap click: short white noise burst + fast decay
+    // Handclap noise burst
     const clapDur = 0.25;
     const bufferSize = audioCtx.sampleRate * clapDur;
     const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
@@ -251,14 +287,14 @@ function flash(msg){
 /* ---------- Canvas exports (Card + Story) ---------- */
 async function downloadCard(){
   await exportCanvas({
-    w: 1200, h: 630, // OG-card style
+    w: 1200, h: 630,
     filename: 'now-listening.png',
     includeText: !els.toggleOnlyCovers.checked
   });
 }
 async function downloadStory(){
   await exportCanvas({
-    w: 1080, h: 1920, // Story portrait
+    w: 1080, h: 1920,
     filename: 'now-listening-story.png',
     includeText: !els.toggleOnlyCovers.checked,
     storySafe: true
@@ -274,13 +310,12 @@ async function exportCanvas({w, h, filename, includeText=true, storySafe=false})
   g.addColorStop(0,'#0b0f14'); g.addColorStop(1,'#142238');
   ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
 
-  // Draw cover (may taint canvas if CORS blocked; we try crossOrigin)
+  // Cover
   let drewImage = false;
   if (current?.artwork){
     try{
       const img = new Image(); img.crossOrigin = 'anonymous'; img.src = current.artwork;
       await img.decode();
-      // Fit: square occupying ~70% width on card, ~85% width on story
       const ratio = storySafe ? 0.85 : 0.70;
       const sz = Math.min(w, h) * ratio;
       const x = (w - sz)/2;
@@ -300,18 +335,15 @@ async function exportCanvas({w, h, filename, includeText=true, storySafe=false})
                          : 'bold 52px system-ui, -apple-system, Segoe UI, Roboto';
     ctx.fillText('Now listening', padX, topY);
 
-    ctx.font = storySafe ? 'bold 72px system-ui, -apple-system, Segoe UI, Roboto'
-                         : 'bold 72px system-ui, -apple-system, Segoe UI, Roboto';
+    ctx.font = 'bold 72px system-ui, -apple-system, Segoe UI, Roboto';
     const title = current?.title || 'Something random';
     wrapText(ctx, title, padX, topY + 80, w - padX*2, storySafe ? 76 : 72);
 
-    ctx.font = storySafe ? '32px system-ui, -apple-system, Segoe UI, Roboto'
-                         : '32px system-ui, -apple-system, Segoe UI, Roboto';
+    ctx.font = '32px system-ui, -apple-system, Segoe UI, Roboto';
     const artist = current?.artist || '???';
     wrapText(ctx, 'by ' + artist, padX, topY + 80 + 110, w - padX*2, 38);
   }
 
-  // Export
   const url = c.toDataURL('image/png');
   const a = document.createElement('a');
   a.href = url; a.download = filename;
@@ -345,7 +377,7 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight){
 
 /* ---------- Only-covers UI toggle ---------- */
 function applyOnlyCovers(){
-  if (els.toggleOnlyCovers.checked) {
+  if (els.toggleOnlyCovers && els.toggleOnlyCovers.checked) {
     document.body.classList.add('only-covers');
   } else {
     document.body.classList.remove('only-covers');
@@ -355,13 +387,16 @@ function applyOnlyCovers(){
 /* ---------- Events ---------- */
 els.btnRandom.addEventListener('click', surprise);
 els.btnNext.addEventListener('click', surprise);
-els.btnPlay.addEventListener('click', togglePlay);
+els.btnPlay.addEventListener('click', playPreview);
+els.btnPause.addEventListener('click', pausePreview);
 els.btnCopy.addEventListener('click', copyText);
 els.btnShare.addEventListener('click', shareNow);
 els.btnDownload.addEventListener('click', downloadCard);
 els.btnDownloadStory.addEventListener('click', downloadStory);
-els.toggleOnlyCovers.addEventListener('change', applyOnlyCovers);
-document.addEventListener('keydown', (e)=>{ if (e.key===' ') { e.preventDefault(); togglePlay(); } });
+if (els.toggleOnlyCovers) els.toggleOnlyCovers.addEventListener('change', applyOnlyCovers);
+document.addEventListener('keydown', (e)=>{ 
+  if (e.key === ' ') { e.preventDefault(); (els.audio.paused ? playPreview() : pausePreview()); } 
+});
 
 /* First paint placeholder cover */
 els.cover.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
