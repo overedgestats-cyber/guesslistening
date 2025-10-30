@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Guess what I'm listening 🎧</title>
+  <meta name="description" content="Tap to get a random track. Optional guess mode, decade roulette, and story export."/>
+  <link rel="stylesheet" href="./style.css"/>
+  <link rel="icon" href="data:,">
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <h1>Guess what I'm listening <span>🎧</span></h1>
+      <p class="tag">It’s nonsense. It’s fun. Tap the button.</p>
+    </header>
+
+    <section class="controls">
+      <div class="row">
+        <button id="btnRandom" class="btn primary">🎲 Surprise me</button>
+        <button id="btnNext" class="btn">Next</button>
+        <label class="toggle">
+          <input type="checkbox" id="toggleGuess"/>
+          <span>Guess mode</span>
+        </label>
+      </div>
+
+      <div class="row">
+        <label class="select">
+          <span>Vibe:</span>
+          <select id="vibe">
+            <option value="">Any</option>
+            <option value="80s synthpop">80s</option>
+            <option value="90s alt rock">90s</option>
+            <option value="pop">Pop</option>
+            <option value="hip hop">Hip-hop</option>
+            <option value="house">House</option>
+            <option value="chill">Chill</option>
+            <option value="workout">Workout</option>
+          </select>
+        </label>
+
+        <label class="select">
+          <span>Decade:</span>
+          <select id="decade">
+            <option value="">Any</option>
+            <option value="1970">70s</option>
+            <option value="1980">80s</option>
+            <option value="1990">90s</option>
+            <option value="2000">2000s</option>
+            <option value="2010">2010s</option>
+            <option value="2020">2020s</option>
+          </select>
+        </label>
+
+        <label class="toggle" title="Hide titles/artists in UI and exported images">
+          <input type="checkbox" id="toggleOnlyCovers"/>
+          <span>Only covers mode</span>
+        </label>
+      </div>
+    </section>
+
+    <main class="card" id="card" aria-live="polite">
+      <div class="coverWrap">
+        <img id="cover" alt="Album cover" src="" />
+        <div class="eq" id="eq" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i>
+        </div>
+      </div>
+
+      <div class="meta">
+        <h2 id="title">Tap “Surprise me”</h2>
+        <p id="artist">…and we’ll pick something</p>
+
+        <audio id="audio" preload="none"></audio>
+
+        <div class="actions">
+          <button id="btnPlay" class="btn">▶️ Play preview</button>
+          <button id="btnCopy" class="btn">📋 Copy text</button>
+          <button id="btnShare" class="btn">🔗 Share</button>
+          <button id="btnDownload" class="btn">🖼️ Download card</button>
+          <button id="btnDownloadStory" class="btn">📱 Download Story (1080×1920)</button>
+        </div>
+      </div>
+
+      <div id="guessBox" class="guess hidden" aria-live="polite">
+        <p class="q">Which song is it?</p>
+        <div class="choices" id="choices"></div>
+        <p id="result" class="result"></p>
+      </div>
+    </main>
+
+    <footer class="foot">
+      <p>Made for fun. Tracks via the public iTunes Search API. No accounts, no data saved.</p>
+    </footer>
+  </div>
+
+  <!-- Off-screen canvas used for PNG exports -->
+  <canvas id="canvas" class="hidden" width="1200" height="630"></canvas>
+
+  <!-- App script -->
+  <script src="./script.js" defer></script>
+</body>
+</html>
