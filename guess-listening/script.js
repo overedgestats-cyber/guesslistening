@@ -1,10 +1,11 @@
-/* Guess what I'm listening — v2.1
+/* Guess what I'm listening — v2.2
    - Story export (1080x1920)
    - Only-covers mode
    - Decade roulette (now includes 40s/50s/60s)
    - Crowd cheer SFX on correct guess
    - Guess-mode blur of title/artist until correct
    - Separate Play / Pause buttons
+   - Buy Me a Coffee button (+ pulse on correct guess)
 */
 
 const els = {
@@ -23,6 +24,7 @@ const els = {
   btnShare: document.getElementById('btnShare'),
   btnDownload: document.getElementById('btnDownload'),
   btnDownloadStory: document.getElementById('btnDownloadStory'),
+  btnCoffee: document.getElementById('btnCoffee'),
 
   toggleGuess: document.getElementById('toggleGuess'),
   toggleOnlyCovers: document.getElementById('toggleOnlyCovers'),
@@ -45,6 +47,23 @@ function ensureAudioCtx(){
     const Ctx = window.AudioContext || window.webkitAudioContext;
     audioCtx = new Ctx();
   }
+}
+
+/* ---------- Buy Me a Coffee helpers ---------- */
+const BMC_URL_BASE = "https://buymeacoffee.com/guesswhatimlisteningto";
+function bmcUrl(reason = "app"){
+  try {
+    const u = new URL(BMC_URL_BASE);
+    u.searchParams.set("utm_source","app");
+    u.searchParams.set("utm_medium","button");
+    u.searchParams.set("utm_campaign", reason);
+    return u.toString();
+  } catch {
+    return BMC_URL_BASE;
+  }
+}
+function openCoffee(reason){
+  window.open(bmcUrl(reason), "_blank", "noopener");
 }
 
 /* ---------- Decade roulette helpers ---------- */
@@ -217,6 +236,11 @@ async function setupGuessRound(answer){
       if (correct) {
         setGuessUIHidden(false); // reveal and re-enable actions
         playCheer();
+        // Nudge the coffee button
+        if (els.btnCoffee) {
+          els.btnCoffee.classList.add('pulse');
+          setTimeout(()=> els.btnCoffee.classList.remove('pulse'), 1200);
+        }
       }
     });
     els.choices.appendChild(btn);
@@ -289,14 +313,14 @@ async function downloadCard(){
   await exportCanvas({
     w: 1200, h: 630,
     filename: 'now-listening.png',
-    includeText: !els.toggleOnlyCovers.checked
+    includeText: !els.toggleOnlyCovers?.checked
   });
 }
 async function downloadStory(){
   await exportCanvas({
     w: 1080, h: 1920,
     filename: 'now-listening-story.png',
-    includeText: !els.toggleOnlyCovers.checked,
+    includeText: !els.toggleOnlyCovers?.checked,
     storySafe: true
   });
 }
@@ -393,6 +417,7 @@ els.btnCopy.addEventListener('click', copyText);
 els.btnShare.addEventListener('click', shareNow);
 els.btnDownload.addEventListener('click', downloadCard);
 els.btnDownloadStory.addEventListener('click', downloadStory);
+if (els.btnCoffee) els.btnCoffee.addEventListener('click', () => openCoffee("tip_button"));
 if (els.toggleOnlyCovers) els.toggleOnlyCovers.addEventListener('change', applyOnlyCovers);
 document.addEventListener('keydown', (e)=>{ 
   if (e.key === ' ') { e.preventDefault(); (els.audio.paused ? playPreview() : pausePreview()); } 
